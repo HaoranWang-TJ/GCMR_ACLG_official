@@ -4,10 +4,10 @@ import torch.nn.functional as F
 
 import numpy as np
 
-from higl.models import ControllerActor, ControllerCritic, ManagerActor, ManagerCritic, RndPredictor
-from higl.relabel import OffPolicyCorrections, HindsightRelabeling
-from higl.utils import AutoLambda
-# from higl.utils import RunningMeanStd
+from algo.models import ControllerActor, ControllerCritic, ManagerActor, ManagerCritic, RndPredictor
+from algo.relabel import OffPolicyCorrections, HindsightRelabeling
+from algo.utils import AutoLambda
+# from algo.utils import RunningMeanStd
 from planner.goal_plan import Planner
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

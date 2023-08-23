@@ -3,17 +3,15 @@ This is a PyTorch implementation for our paper: [Guided Cooperation in Hierarchi
 
 Our code is based on official implementation of [HIGL](https://github.com/junsu-kim97/HIGL) (NeurIPS 2021).
 
-By integrating the proposed GCMR and ACLG, a disentangled variant of HIGL (see ***Branch*** "[ACLG](https://github.com/HaoranWang-TJ/ACLG_GCMR/tree/ACLG)" or "[ACLG_Complex_Tasks](https://github.com/HaoranWang-TJ/ACLG_GCMR/tree/ACLG_Complex_Tasks)" in this repository [ACLG_GCMR](https://github.com/HaoranWang-TJ/ACLG_GCMR) for details), we achieved a remarkable SOTA.
+By integrating the proposed GCMR and ACLG, a disentangled variant of HIGL (see ***Branch*** "[ACLG](https://github.com/HaoranWang-TJ/ACLG_GCMR/tree/ACLG)" or "[ACLG_Complex_Tasks](https://github.com/HaoranWang-TJ/ACLG_GCMR/tree/ACLG_Complex_Tasks)" in another repository [ACLG_GCMR](https://github.com/HaoranWang-TJ/ACLG_GCMR) for details), we achieved a remarkable SOTA.
 
 ## Branch Tree
-To maintain a clean code tree, we created multiple branches based on the HIGL to progressively implement our code '**Branch by Branch**':
+We implemented our code based on our another repository [ACLG_GCMR](https://github.com/HaoranWang-TJ/ACLG_GCMR) , which has a well-organized code structure by implementing its code 'Branch by Branch'. This repository was implemented as follows:
 
 ```mermaid
 flowchart TD
-    S[junsu-kim97/HIGL] --> |A copy / fork| A[HIGL]
-    A[HIGL] -->|Minor modifications to the landmark loss| B[ACLG]
-    B[ACLG] -->|Add more complex tasks: stochastic AntMaze and Large AntMaze| C[ACLG_Complex_Tasks]
-    C[ACLG_Complex_Tasks] -->|Plug the GCMR| D[ACLG_GCMR_Complex_Tasks]
+    S[HaoranWang-TJ/ACLG_GCMR/tree/ACLG_GCMR_Complex_Tasks] --> |A copy| A[ACLG_GCMR_Complex_Tasks]
+    A[ACLG_GCMR_Complex_Tasks] -->|Minor code refactoring| B[main]
 ```
 
 ## Installation

@@ -9,7 +9,7 @@ import pandas as pd
 import random
 
 from functools import total_ordering
-# from higl.higl import var
+# from algo.higl import var
 
 from itertools import compress
 

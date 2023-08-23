@@ -8,10 +8,10 @@ import pandas as pd
 from math import ceil
 from collections import OrderedDict
 
-import higl.utils as utils
-import higl.higl as higl
-from higl.models import ANet
-from higl.fkm import FKMInterface
+import algo.utils as utils
+import algo.higl as higl
+from algo.models import ANet
+from algo.fkm import FKMInterface
 
 import gym
 from goal_env import *
