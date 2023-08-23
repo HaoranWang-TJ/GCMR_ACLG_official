@@ -11,3 +11,4 @@ pip install seaborn
 pip install scikit-learn==1.0.2
 pip install protobuf==3.20.2
 pip install setuptools==58.0.4
+pip install "cython<3"

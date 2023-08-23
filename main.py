@@ -1,6 +1,6 @@
 import argparse
 
-from higl.train import run_higl
+from algo.train import run_higl
 
 parser = argparse.ArgumentParser()
 
@@ -16,7 +16,7 @@ parser.add_argument("--eval_freq", default=5e3, type=float)
 parser.add_argument("--eval_episode_num", default=10, type=int)
 parser.add_argument("--max_timesteps", default=5e6, type=float)
 
-# TODO: The step_update is optional to update the agent more frequently.
+# TODO: GCMR: The step_update is optional to update the agent more frequently.
 parser.add_argument('--step_update', action="store_true")
 parser.add_argument("--step_update_interval", default=50, type=int)
 
@@ -37,7 +37,8 @@ parser.add_argument("--candidate_goals", default=10, type=int)
 parser.add_argument("--manager_propose_freq", "-k", default=10, type=int)
 parser.add_argument("--train_manager_freq", default=10, type=int)
 parser.add_argument("--discount", default=0.99, type=float)
-# TODO: Rollout-based Off-policy correction
+
+# TODO: GCMR: Rollout-based Off-policy correction
 parser.add_argument("--correction_type", default="mopc", type=str, choices=["m-OPC", "OPC", "OSP", "HAC", 'NOR']
                     , help="m-OPC or OPC for higl-relabeling w/wo model; OSP or HAC for hac-relabeling w/wo model; nor for no relabeling")
 parser.add_argument("--use_model_based_rollout", action="store_true")
@@ -45,7 +46,7 @@ parser.add_argument("--osp_delta", default=0., type=float)
 parser.add_argument("--osp_delta_update_rate", default=0., type=float)
 parser.add_argument("--rollout_exp_w", default=1., type=float)
 
-# TODO: Forward Kinematic Model
+# TODO: GCMR: Forward Kinematic Model
 parser.add_argument("--fkm_hidden_size", default=256, type=int)
 parser.add_argument("--fkm_hidden_layer_num", default=3, type=int)
 parser.add_argument("--fkm_network_num", default=5, type=int)
@@ -63,7 +64,7 @@ parser.add_argument("--ctrl_act_lr", default=1e-4, type=float)
 parser.add_argument("--ctrl_crit_lr", default=1e-3, type=float)
 parser.add_argument("--ctrl_discount", default=0.95, type=float)
 
-# TODO: MGP + OSRP
+# TODO: GCMR: MGP + OSRP
 parser.add_argument("--ctrl_mgp_lambda", default=0., type=float)
 parser.add_argument("--ctrl_osrp_lambda", default=0., type=float)
 parser.add_argument("--ctrl_gcmr_start_step", default=20000, type=int)

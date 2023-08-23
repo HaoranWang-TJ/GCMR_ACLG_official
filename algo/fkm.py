@@ -7,7 +7,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 import itertools
 
-from higl.higl import device, get_tensor
+from algo.higl import device, get_tensor
 
 if device.type == 'cpu':
     torch.set_default_tensor_type(torch.FloatTensor)
