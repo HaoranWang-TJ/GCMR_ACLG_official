@@ -38,7 +38,7 @@ parser.add_argument("--manager_propose_freq", "-k", default=10, type=int)
 parser.add_argument("--train_manager_freq", default=10, type=int)
 parser.add_argument("--discount", default=0.99, type=float)
 # TODO: Rollout-based Off-policy correction
-parser.add_argument("--correction_type", default="mopc", type=str, choices=["m-OPC", "OPC", "OSP", "HAC", 'NOR']
+parser.add_argument("--correction_type", default="m-OPC", type=str, choices=["m-OPC", "OPC", "OSP", "HAC", 'NOR']
                     , help="m-OPC or OPC for higl-relabeling w/wo model; OSP or HAC for hac-relabeling w/wo model; nor for no relabeling")
 parser.add_argument("--use_model_based_rollout", action="store_true")
 parser.add_argument("--osp_delta", default=0., type=float)
