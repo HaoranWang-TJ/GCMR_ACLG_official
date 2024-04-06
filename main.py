@@ -119,14 +119,14 @@ parser.add_argument("--automatic_delta_pseudo", action="store_true")
 # Save
 parser.add_argument("--save_models", action="store_true")
 parser.add_argument("--save_dir", default="./models", type=str)
-parser.add_argument("--save_replay_buffer", type=str)
+parser.add_argument("--save_replay_buffer", action="store_true")
 
 # Load
 parser.add_argument("--load", action="store_true")
 parser.add_argument("--load_dir", default="./models", type=str)
 parser.add_argument("--load_algo", type=str)
 parser.add_argument("--log_dir", default="./logs", type=str)
-parser.add_argument("--load_replay_buffer", type=str)
+parser.add_argument("--load_replay_buffer", action="store_true")
 parser.add_argument("--load_adj_net", default=False, action="store_true")
 
 parser.add_argument("--version", type=str, default='v0')

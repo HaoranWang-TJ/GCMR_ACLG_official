@@ -17,7 +17,7 @@ import gym
 from goal_env import *
 from goal_env.mujoco import *
 
-from envs import EnvWithGoal, TrainTestWrapper
+from envs import EnvWithGoal, TrainTestWrapper, OpenAIFetch
 
 
 def evaluate_policy(env,
@@ -121,7 +121,7 @@ def run_higl(args):
 
     if args.save_models:
         import pickle
-        with open("opts.pkl", "wb") as f:
+        with open("{}/{}_{}_{}_{}_opts.pkl".format(args.save_dir, args.env_name, args.algo, args.version, args.seed), "wb") as f:
             pickle.dump(args, f)
 
     if "Ant" in args.env_name:
@@ -141,7 +141,13 @@ def run_higl(args):
         step_style = args.reward_shaping == 'sparse'
         env = EnvWithGoal(gym.make(args.env_name), env_name=args.env_name, step_style=step_style)
     else:
-        env = gym.make(args.env_name, reward_shaping=args.reward_shaping)
+        if 'Fetch' in args.env_name:
+            env = gym.make(args.env_name, reward_type=args.reward_shaping)
+            if args.env_name in ["FetchPickAndPlace-v1", "FetchPush-v1"]:
+                env = gym.wrappers.TimeLimit(env.env, max_episode_steps=100)
+                env = OpenAIFetch(env, args.env_name)
+        else:
+            env = gym.make(args.env_name, reward_shaping=args.reward_shaping)
         # env_test = gym.make(args.env_name_test, reward_shaping=args.reward_shaping)
 
     max_action = float(env.action_space.high[0])
@@ -156,6 +162,12 @@ def run_higl(args):
         low = - high
     elif args.env_name in ["Pusher-v0"]:
         high = np.array([2., 2., 2., 2., 2.])
+        low = - high
+    elif args.env_name in ["FetchPush-v1"]:
+        high = np.array([0.8, 0.8, 0.8, 0.8, 0.8])
+        low = - high
+    elif args.env_name in ["FetchPickAndPlace-v1"]:
+        high = np.array([0.8, 0.8, 0.8, 0.8, 0.8, 0.8])
         low = - high
     elif "AntMaze" in args.env_name or "PointMaze" in args.env_name \
         or "AntPush" in args.env_name:
@@ -212,7 +224,7 @@ def run_higl(args):
     goal_dim = goal.shape[0]
     action_dim = env.action_space.shape[0]
 
-    if args.env_name in ["Reacher3D-v0", "Pusher-v0"]:
+    if args.env_name in ["Reacher3D-v0", "Pusher-v0", "FetchPickAndPlace-v1", "FetchPush-v1"]:
         calculate_controller_reward = utils.get_mbrl_fetch_reward_function(env, args.env_name,
                                                                            binary_reward=args.binary_int_reward,
                                                                            absolute_goal=args.absolute_goal)
@@ -291,10 +303,9 @@ def run_higl(args):
         man_noise = utils.NormalNoise(sigma=args.man_noise_sigma)
         ctrl_noise = utils.NormalNoise(sigma=args.ctrl_noise_sigma)
 
-    if args.load_replay_buffer is not None:
-        manager_buffer.load(args.load_replay_buffer + "_manager.npz")
-        controller_buffer.load(args.load_replay_buffer + "_controller.npz")
-        print("Replay buffers loaded")
+    if args.load_replay_buffer:
+        manager_buffer.load("{}/{}_{}_{}_{}_manager_buffer.npz".format(args.save_dir, args.env_name, args.algo, args.version, args.seed))
+        controller_buffer.load("{}/{}_{}_{}_{}_controller_buffer.npz".format(args.save_dir, args.env_name, args.algo, args.version, args.seed))
 
     # Initialize adjacency matrix and adjacency network
     n_states = 0
@@ -321,6 +332,7 @@ def run_higl(args):
         try:
             manager_policy.load(args.load_dir, args.env_name, args.load_algo, args.version, args.seed)
             controller_policy.load(args.load_dir, args.env_name, args.load_algo, args.version, args.seed)
+            fkm_obj.load(args.load_dir, args.env_name, args.load_algo, args.version, args.seed)
             print("Loaded successfully.")
             just_loaded = True
         except Exception as e:
@@ -361,6 +373,10 @@ def run_higl(args):
     man_lossls = utils.LossesList()
     skip_ctrl_train = 0
     while total_timesteps < args.max_timesteps:
+        args.save_dir = os.path.join(args.save_dir.split('steps')[0] if 'steps' in args.save_dir else args.save_dir, 'steps'
+                                     , f'{total_timesteps//50000 * 50000}')
+        if args.save_models and not os.path.exists(args.save_dir):
+            os.makedirs(args.save_dir)
         if total_timesteps != 0 and not just_loaded and \
             args.step_update and total_timesteps % args.step_update_interval == 0 and len(controller_buffer) >= 5 * args.ctrl_batch_size:
             # Train controller
@@ -539,8 +555,8 @@ def run_higl(args):
                     writer.add_scalar("eval/avg_ep_rew", avg_ep_rew, total_timesteps)
                     writer.add_scalar("eval/avg_controller_rew", avg_controller_rew, total_timesteps)
 
-                    if "Maze" in args.env_name or "AntPush" in args.env_name\
-                        or args.env_name in ["Reacher3D-v0", "Pusher-v0"]:
+                    if "Maze" in args.env_name or "AntPush" in args.env_name \
+                        or args.env_name in ["Reacher3D-v0", "Pusher-v0", "FetchPickAndPlace-v1", "FetchPush-v1"]:
                         writer.add_scalar("eval/avg_steps_to_finish", avg_steps, total_timesteps)
                         writer.add_scalar("eval/perc_env_goal_achieved", avg_env_finish, total_timesteps)
 
@@ -556,9 +572,9 @@ def run_higl(args):
                         controller_policy.save(args.save_dir, args.env_name, args.algo, args.version, args.seed)
                         manager_policy.save(args.save_dir, args.env_name, args.algo, args.version, args.seed)
 
-                    if args.save_replay_buffer is not None:
-                        manager_buffer.save(args.save_replay_buffer + "_manager")
-                        controller_buffer.save(args.save_replay_buffer + "_controller")
+                    if args.save_replay_buffer:
+                        manager_buffer.save("{}/{}_{}_{}_{}_manager_buffer".format(args.save_dir, args.env_name, args.algo, args.version, args.seed))
+                        controller_buffer.save("{}/{}_{}_{}_{}_controller_buffer".format(args.save_dir, args.env_name, args.algo, args.version, args.seed))
 
                 # Train adjacency network
                 if args.algo in ["higl", "hrac", "aclg"]:
@@ -614,6 +630,9 @@ def run_higl(args):
                     writer.add_scalar("data/fkm_loss", fkm_loss, total_timesteps)
 
                     fkm_obj_last_train_step = total_timesteps
+
+                    if args.save_models:
+                        fkm_obj.save(args.save_dir, args.env_name, args.algo, args.version, args.seed)
 
                 # Update RND module
                 if RND is not None:
@@ -764,7 +783,7 @@ def run_higl(args):
 
     print(args.env_name)
     if "Maze" in args.env_name or "AntPush" in args.env_name \
-        or args.env_name in ["Reacher3D-v0", "Pusher-v0"]:
+        or args.env_name in ["Reacher3D-v0", "Pusher-v0", "FetchPickAndPlace-v1", "FetchPush-v1"]:
         writer.add_scalar("eval/avg_steps_to_finish", avg_steps, total_timesteps)
         writer.add_scalar("eval/perc_env_goal_achieved", avg_env_finish, total_timesteps)
 

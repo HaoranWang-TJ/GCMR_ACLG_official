@@ -70,15 +70,17 @@ class ReplayBuffer(object):
 
     def save(self, file):
         np.savez_compressed(file, idx=np.array([self.next_idx]), x=self.storage[0],
-                            y=self.storage[1], g=self.storage[2], u=self.storage[3],
-                            r=self.storage[4], d=self.storage[5], xseq=self.storage[6],
-                            aseq=self.storage[7], ld=self.storage[8])
+                            y=self.storage[1], ag=self.storage[2], agnext=self.storage[3],
+                            g=self.storage[4], u=self.storage[5], r=self.storage[6],
+                            d=self.storage[7], xseq=self.storage[8], aseq=self.storage[9],
+                            agseq=self.storage[10])
 
     def load(self, file):
         with np.load(file) as data:
             self.next_idx = int(data['idx'][0])
-            self.storage = [data['x'], data['y'], data['g'], data['u'], data['r'],
-                            data['d'], data['xseq'], data['aseq'], data['ld']]
+            self.storage = [data['x'], data['y'], data['ag'], data['agnext'], data['g'],
+                            data['u'], data['r'], data['d'], data['xseq'], data['aseq'],
+                            data['agseq']]
             self.storage = [list(l) for l in self.storage]
 
     def __len__(self):
@@ -253,7 +255,10 @@ def get_reward_function(env, env_name, absolute_goal=False, binary_reward=False)
 def get_mbrl_fetch_reward_function(env, env_name, binary_reward, absolute_goal):
     action_penalty_coeff = 0.0001
     distance_threshold = 0.25
-    if env_name in ["Reacher3D-v0", "Pusher-v0"]:
+    if env_name in ["FetchPickAndPlace-v1", "FetchPush-v1"]:
+        action_penalty_coeff = 0.1
+        distance_threshold = 0.05
+    if env_name in ["Reacher3D-v0", "Pusher-v0", "FetchPickAndPlace-v1", "FetchPush-v1"]:
         if absolute_goal and not binary_reward:
             def controller_reward(ag, subgoal, next_ag, scale, action):
                 reward = -np.sum(np.square(ag - subgoal))
@@ -279,7 +284,7 @@ def get_mbrl_fetch_reward_function(env, env_name, binary_reward, absolute_goal):
             def controller_reward(ag, subgoal, next_ag, scale, action):
                 reward_ctrl = action_penalty_coeff * -np.square(action).sum()
                 fail = True
-                if np.sqrt(np.sum(np.square(ag - subgoal))) <= distance_threshold:
+                if np.sqrt(np.sum(np.square(ag + subgoal - next_ag))) <= distance_threshold:
                     fail = False
                 reward = reward_ctrl - float(fail)
                 return reward * scale

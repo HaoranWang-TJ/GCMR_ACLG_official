@@ -84,6 +84,18 @@ class StandardScaler:
             else:
                 return None
 
+    def save(self, path):
+        import pickle
+        with open(path, "wb") as f:
+            pickle.dump((self.mean, self.std, self.state_dim,
+                         self.state_min, self.state_max, self.epsilon), f)
+
+    def load(self, path):
+        import pickle
+        with open(path, "rb") as f:
+            self.mean, self.std, self.state_dim,self.state_min,\
+                self.state_max, self.epsilon = pickle.load(f)
+
 
 def init_weights(m):
     def truncated_normal_init(t, mean=0.0, std=0.01):
@@ -392,3 +404,12 @@ class FKMInterface:
     @property
     def scaler(self):
         return self.predictor.scaler
+
+    def save(self, dir, env_name, algo, version, seed):
+        torch.save(self.predictor.ensemble_model.state_dict(), "{}/{}_{}_{}_{}_EnsembleDynamicsModel.pth".format(dir, env_name, algo, version, seed))
+        self.predictor.scaler.save("{}/{}_{}_{}_{}_EnsembleDynamicsModel_scaler.pkl".format(dir, env_name, algo, version, seed))
+
+    def load(self, dir, env_name, algo, version, seed):
+        self.predictor.ensemble_model.load_state_dict(torch.load("{}/{}_{}_{}_{}_EnsembleDynamicsModel.pth".format(dir, env_name, algo, version, seed)))
+        self._trained = True
+        self.predictor.scaler.load("{}/{}_{}_{}_{}_EnsembleDynamicsModel_scaler.pkl".format(dir, env_name, algo, version, seed))

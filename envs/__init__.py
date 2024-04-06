@@ -1,6 +1,8 @@
 import numpy as np
 import argparse
 import random
+from gym import Wrapper
+from gym.wrappers.normalize import RunningMeanStd
 
 # import envs.create_maze_env
 
@@ -302,6 +304,53 @@ class TrainTestWrapper(object):
     @property
     def action_space(self):
         return self.base_env.action_space
+
+
+class OpenAIFetch(Wrapper):
+    def __init__(self, env, env_name, obs_shape=(25, ), epsilon=0.01, clip_obs=200, norm_clip=5):
+        super().__init__(env)
+        self.env_name = env_name
+        if "FetchPush" in self.env_name:
+            self.obs_shift = np.array([1.3, 0.8, 1.3, 0.8, 0.45])
+            self.goal_dim = 2
+        elif "FetchPickAndPlace" in self.env_name:
+            self.obs_shift = np.array([1.3, 0.8, 0.45, 1.3, 0.8, 0.45])
+            self.goal_dim = 3
+        else:
+            assert NotImplementedError
+        self.obs_rms = RunningMeanStd(epsilon=epsilon, shape=obs_shape)
+        self.epsilon = epsilon
+        self.clip_obs = clip_obs
+        self.norm_clip = norm_clip
+
+    def normalize(self, obs):
+        obs = np.clip(obs, -self.clip_obs, self.clip_obs)
+        self.obs_rms.update(obs)
+        obs = (obs - self.obs_rms.mean) / np.sqrt(self.obs_rms.var + self.epsilon)
+        obs = np.clip(obs, -self.norm_clip, self.norm_clip)
+        return obs
+
+    def obs_wrapper(self, obs):
+        new_obs = dict()
+        new_obs['achieved_goal'] = np.concatenate((obs['achieved_goal'][..., :self.goal_dim]-self.obs_shift[:self.goal_dim]
+                                                   , obs['observation'][..., :3]-self.obs_shift[self.goal_dim:]))
+        new_obs['desired_goal'] = np.concatenate((obs['desired_goal'][..., :self.goal_dim]-self.obs_shift[:self.goal_dim]
+                                                  , obs['achieved_goal'][..., :3]-self.obs_shift[self.goal_dim:]))
+        new_obs['observation'] = np.concatenate((obs['achieved_goal'][..., :self.goal_dim]-self.obs_shift[:self.goal_dim]
+                                                 , obs['observation'][..., :3]-self.obs_shift[self.goal_dim:]
+                                                 , self.normalize(obs['observation'])))
+        return new_obs
+
+    def reset(self):
+        obs = super().reset()
+        obs = self.obs_wrapper(obs)
+        return obs
+
+    def step(self, action):
+        obs, rwd, done, info = super().step(action)
+        obs = self.obs_wrapper(obs)
+        rwd += -1.0 * np.linalg.norm(action, axis=-1)
+        return obs, rwd, done, info
 
 
 # def run_environment(env_name, episode_length, num_episodes):

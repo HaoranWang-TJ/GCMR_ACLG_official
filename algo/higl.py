@@ -56,7 +56,7 @@ class Manager(object):
                  planner_goal_thr=-10.,
                  init_opc_delta=0,
                  opc_delta_update_rate=0,
-                 correction_type=0,
+                 correction_type='m-OPC',
                  ):
         self.scale = scale
         self.actor = ManagerActor(state_dim,
@@ -200,14 +200,14 @@ class Manager(object):
 
     def goal_relabeling(self, controller_policy, batch_size, subgoals, x_seq, a_seq, ag_seq, goals, fkm_obj=None, exp_w=1.0):
         if self.correction_type == 'm-OPC':
-            opc_obj = OffPolicyCorrections(self.absolute_goal, controller_policy, batch_size, subgoals.copy(), x_seq, a_seq, ag_seq, self.candidate_goals, self.scale, self.action_dim, fkm_obj)
-            relabeled_goals = opc_obj.get_corrected_goals(exp_w)
+            opc_obj = OffPolicyCorrections(self.absolute_goal, controller_policy, batch_size, subgoals.copy(), x_seq, a_seq, ag_seq, self.candidate_goals, self.scale, self.action_dim, fkm_obj, exp_w)
+            relabeled_goals = opc_obj.get_corrected_goals()
         elif self.correction_type == 'OSP':
             hr_obj = HindsightRelabeling(self.absolute_goal, self, controller_policy, batch_size, subgoals.copy(), x_seq, ag_seq, goals, self.scale, self.action_dim, fkm_obj)
             relabeled_goals = hr_obj.get_relabeled_goals()
         elif self.correction_type == 'OPC':
-            opc_obj = OffPolicyCorrections(self.absolute_goal, controller_policy, batch_size, subgoals.copy(), x_seq, a_seq, ag_seq, self.candidate_goals, self.scale, self.action_dim, None)
-            relabeled_goals = opc_obj.get_corrected_goals(exp_w)
+            opc_obj = OffPolicyCorrections(self.absolute_goal, controller_policy, batch_size, subgoals.copy(), x_seq, a_seq, ag_seq, self.candidate_goals, self.scale, self.action_dim, None, exp_w)
+            relabeled_goals = opc_obj.get_corrected_goals()
         elif self.correction_type == 'HAC':
             hr_obj = HindsightRelabeling(self.absolute_goal, self, controller_policy, batch_size, subgoals.copy(), x_seq, ag_seq, goals, self.scale, self.action_dim, None)
             relabeled_goals = hr_obj.get_relabeled_goals()
@@ -221,9 +221,9 @@ class Manager(object):
         sg_direction = vec_norm(relabeled_goals - subgoals)
         if self.opc_delta_f.is_dynamic:
             self.opc_delta_f.update(np.linalg.norm(relabeled_goals - subgoals, axis=1).mean())
-        solf_subgoals = subgoals + self.opc_delta_f.value * sg_direction
-        solf_subgoals = solf_subgoals.clip(-self.scale[:self.action_dim], self.scale[:self.action_dim])
-        return solf_subgoals
+        soft_subgoals = subgoals + self.opc_delta_f.value * sg_direction
+        soft_subgoals = soft_subgoals.clip(-self.scale[:self.action_dim], self.scale[:self.action_dim])
+        return soft_subgoals
 
     def train(self,
               algo,
@@ -261,7 +261,7 @@ class Manager(object):
             next_state = get_tensor(y)
             achieved_goal = get_tensor(ag)
             goal = get_tensor(g)
-            subgoal = get_tensor(sg)
+            subgoal = get_tensor(np.array(sg))
 
             reward = get_tensor(r)
             done = get_tensor(1 - d)

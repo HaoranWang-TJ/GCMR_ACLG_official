@@ -1,7 +1,8 @@
 import numpy as np
 
 class OffPolicyCorrections(object):
-    def __init__(self, absolute_goal:bool, controller_policy, batch_size, subgoals, obs, acts, ags, candidate_num, subgoal_scale, subgoal_dim, fkm_obj):
+    def __init__(self, absolute_goal:bool, controller_policy, batch_size, subgoals, obs, acts, ags, candidate_num
+                 , subgoal_scale, subgoal_dim, fkm_obj, exp_w=0.0):
         self.absolute_goal = absolute_goal
         self.controller_policy = controller_policy
         self.batch_size = batch_size
@@ -17,7 +18,7 @@ class OffPolicyCorrections(object):
 
         # pipeline
         self.candidates = self.get_candidates()
-        self.rollout_error = self.get_rollout_error()
+        self.rollout_error = self.get_rollout_error(exp_w)
         
     def get_candidates(self):
         first_ag = [x[0] for x in self.ags]
@@ -43,7 +44,7 @@ class OffPolicyCorrections(object):
 
         return candidates
 
-    def get_rollout_error(self):
+    def get_rollout_error(self, exp_w=0.0):
         x_seq = np.array(self.obs)[:, :-1, :]
         a_seq = np.array(self.acts)
         seq_len = len(x_seq[0])
@@ -90,6 +91,8 @@ class OffPolicyCorrections(object):
                 _next_state = _curr_state + _state_delta
                 if self.fkm_obj.scaler.obs_max is not None and self.fkm_obj.scaler.obs_min is not None:
                     _next_state = _next_state.clip(self.fkm_obj.scaler.obs_min, self.fkm_obj.scaler.obs_max)
+                _next_state = (1 - exp_w**(t+1)) * _next_state + exp_w**(t+1) * np.repeat(
+                    np.array(self.obs)[:, t+1:t+2, :], ncands, axis=1).reshape((self.batch_size * ncands, -1))
                 # new state
                 if not self.absolute_goal:
                     _candidate = (_candidate + _curr_state[:, :self.subgoal_dim]) - _next_state[:, :self.subgoal_dim]
@@ -107,13 +110,10 @@ class OffPolicyCorrections(object):
             difference = _hiro()
         return difference
     
-    def get_corrected_goals(self, exp_w):
-        x_seq = np.array(self.obs)[:, :-1, :]
-        seq_len = len(x_seq[0])
+    def get_corrected_goals(self):
         difference = self.rollout_error
 
-        exponential_weight = np.array([exp_w**i for i in range(seq_len)])
-        logprob = -0.5*np.sum(exponential_weight * np.linalg.norm(difference, axis=-1)**2, axis=-1)
+        logprob = -0.5*np.sum(np.linalg.norm(difference, axis=-1)**2, axis=-1)
         max_indices = np.argmax(logprob, axis=-1)
 
         hit_candidates = self.candidates[np.arange(self.batch_size), max_indices]

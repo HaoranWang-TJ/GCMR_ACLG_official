@@ -20,8 +20,8 @@ CUDA_VISIBLE_DEVICES=${GPU} python main.py \
 --fkm_lr 0.005 \
 --fkm_obj_start_step 20000 \
 --train_fkm_freq 2000 \
---osp_delta 10 \
---osp_delta_update_rate 0.01 \
+--osp_delta 20 \
+--osp_delta_update_rate 0 \
 --rollout_exp_w 0.95 \
 --ctrl_mgp_lambda 1.0 \
 --ctrl_osrp_lambda 0.0005 \
