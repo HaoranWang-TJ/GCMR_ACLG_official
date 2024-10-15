@@ -95,6 +95,7 @@ def create_maze_env(env_name=None, top_down_view=False, maze_size_scaling=8, ran
         maze_id = 'MazeL'
     elif env_name == 'Push':
         maze_id = 'Push'
+        observe_blocks = True
     elif env_name == 'Fall':
         maze_id = 'Fall'
     elif env_name == 'Block':

@@ -136,6 +136,33 @@ def run_higl(args):
                                        , stochastic_xy=args.stochastic_xy
                                        , stochastic_sigma=args.stochastic_sigma
                                        ), env_name=args.env_name, step_style=step_style)
+        if "AntPush" in args.env_name:
+            def obs_wrapper(obs):
+                new_obs = dict()
+                new_obs['achieved_goal'] = np.r_[obs['achieved_goal'], obs['observation'][3:5]]
+                new_obs['desired_goal'] = np.r_[obs['desired_goal'], [0, 0]]
+                new_obs['observation'] = np.r_[obs['achieved_goal'], obs['observation'][3:5], obs['observation'][:-1]]
+                return new_obs
+            def new_action_space_wrapper(env, min_action, max_action):
+                new_min_action = (
+                    np.zeros(env.action_space.shape, dtype=env.action_space.dtype) + min_action
+                )
+                new_max_action = (
+                    np.zeros(env.action_space.shape, dtype=env.action_space.dtype) + max_action
+                )
+                new_action_space = gym.spaces.Box(
+                    low=new_min_action,
+                    high=new_max_action,
+                    shape=env.action_space.shape,
+                    dtype=env.action_space.dtype,
+                )
+                return new_action_space
+            # Inspired by the work of Li et al. titled "Active Hierarchical Exploration with Stable Subgoal Representation Learning".
+            # https://github.com/SiyuanLee/HESS/blob/master/goal_env/mujoco/assets/ant.xml#L76-L94
+            # The action space range has been reduced to [-16, 16].
+            # "Soft fire makes sweet malt." / "slow and steady wins the race." / "慢工出细活。"
+            env.base_env.action_space = new_action_space_wrapper(env, -16, 16)
+            env = gym.wrappers.TransformObservation(env, lambda obs: obs_wrapper(obs))
     elif "Point" in args.env_name:
         assert not args.stochastic_xy
         step_style = args.reward_shaping == 'sparse'
@@ -169,8 +196,10 @@ def run_higl(args):
     elif args.env_name in ["FetchPickAndPlace-v1"]:
         high = np.array([0.8, 0.8, 0.8, 0.8, 0.8, 0.8])
         low = - high
-    elif "AntMaze" in args.env_name or "PointMaze" in args.env_name \
-        or "AntPush" in args.env_name:
+    elif "AntPush" in args.env_name:
+        high = np.array((10., 10., 2., 2.))
+        low = - high
+    elif "AntMaze" in args.env_name or "PointMaze" in args.env_name:
         high = np.array((10., 10.))
         low = - high
     else:

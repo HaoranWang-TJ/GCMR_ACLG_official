@@ -84,7 +84,7 @@ def get_goal_sample_fn(env_name, evaluate, fix_goal=False, manual_goal=None):
             else:
                 return lambda: np.random.uniform((-2, -2), (10, 10))
     elif env_name == 'AntPush-v1':
-        return lambda: np.array([0., 9.5])
+        return lambda: np.array([0., 8.])
     else:
         assert False, 'Unknown env'
 
@@ -93,12 +93,14 @@ def get_reward_fn(env_name, goal_dim, step_style=False):
     if step_style:
         # if env_name in ['AntMaze-v1']:
         #    return lambda obs, goal: -(np.linalg.norm(obs[:2] - goal, axis=-1) > 5).astype(np.float32)
-        if env_name in ['AntMaze-v1', 'AntMazeL-v1', 'PointMaze-v1', 'AntMazeComplex-v1', 'AntPush-v1']:
+        if env_name in ['AntMaze-v1', 'AntMazeL-v1', 'PointMaze-v1', 'AntMazeComplex-v1']:
             return lambda obs, goal: -(np.linalg.norm(obs[:goal_dim] - goal, axis=-1) > 2.5).astype(np.float32)
         elif env_name in ["PointMaze-v0", "AntMaze-v0", 'AntMazeComplex-v0']:
             return lambda obs, goal: -(np.linalg.norm(obs[:goal_dim] - goal, axis=-1) > 5.0).astype(np.float32)
         elif env_name in ['AntMazeW-v2', 'AntMazeComplex-v2']:
             return lambda obs, goal: -(np.linalg.norm(obs[:goal_dim] - goal, axis=-1) > 1.0).astype(np.float32)
+        elif env_name in ['AntPush-v1']:
+            return lambda obs, goal: -(np.linalg.norm(obs[:goal_dim] - goal, axis=-1) > 1.5).astype(np.float32)
         else:
             assert False, 'Unknown env'
     else:
@@ -126,10 +128,12 @@ def get_success_fn(env_name, step_style=False):
     else:
         if env_name in ['AntMaze', 'AntMazeSmall', "AntMazeL", "PointMaze-v0", "AntMaze-v0", "AntMazeComplex-v0"]:
             return lambda reward: reward > -5.0
-        elif env_name in ["PointMaze-v1", "AntMaze-v1", "AntMazeL-v1", "AntMazeComplex-v1", "AntPush-v1"]:
+        elif env_name in ["PointMaze-v1", "AntMaze-v1", "AntMazeL-v1", "AntMazeComplex-v1"]:
             return lambda reward: reward > -2.5
         elif env_name in ["AntMazeW-v2", "AntMazeComplex-v2"]:
             return lambda reward: reward > -1.0
+        elif env_name in ["AntPush-v1"]:
+            return lambda reward: reward > -1.5
         elif env_name == 'AntMazeSparse':
             return lambda reward: reward > 1e-6
         elif env_name == 'PointMaze':
